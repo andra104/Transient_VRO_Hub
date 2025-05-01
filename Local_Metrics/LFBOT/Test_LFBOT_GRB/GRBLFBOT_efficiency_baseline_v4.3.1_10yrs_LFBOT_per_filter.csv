@@ -1,0 +1,5 @@
+dist_min_Mpc, dist_max_Mpc, metric, filter, found, total, efficiency
+10, 600, LFBOT_GRB, g, 8, 453, 0.0177
+10, 600, LFBOT_GRB, r, 17, 453, 0.0375
+# Multi-band Metrics
+10, 600, LFBOT_Characterize_MultiBand, MultiBand, 313, 453, 0.6909

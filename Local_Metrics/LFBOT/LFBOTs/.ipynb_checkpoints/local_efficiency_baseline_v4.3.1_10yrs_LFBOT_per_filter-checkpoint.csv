@@ -1,0 +1,6 @@
+dist_min_Mpc, dist_max_Mpc, metric, filter, found, total, efficiency 
+10, 600, LFBOT_Detect, g, 3, 453, 0.0066
+10, 600, LFBOT_Characterize, g, 313, 453, 0.6909
+10, 600, LFBOT_Characterize, r, 313, 453, 0.6909
+10, 600, LFBOT_Detect, r, 10, 453, 0.0221
+10, 600, LFBOT_Characterize, r, 313, 453, 0.6909
