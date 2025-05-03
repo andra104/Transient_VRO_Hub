@@ -1,3 +1,0 @@
-dist_min_Mpc, dist_max_Mpc, metric, found, total, efficiency
-10, 1000, baseline_v4.3.1_10yrs_GRBPopMetric_MultiDetect, 871, 5004, 0.1740607513988809
-10, 1000, baseline_v4.3.1_10yrs_GRBPopMetric_EpochDetect, 1064, 5004, 0.21262989608313348
