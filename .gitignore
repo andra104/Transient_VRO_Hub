@@ -1,0 +1,45 @@
+# === Ignore large database and binary files ===
+*.db
+*.pkl
+
+# Explicitly ignore known large files by name
+baseline_v4.3.1_10yrs.db
+four_roll_v4.3.1_10yrs.db
+GRBafterglows/GRBafterglows_output/GRB_ObsDataLC_*.pkl
+
+# === Ignore Jupyter notebook checkpoints ===
+.ipynb_checkpoints/
+
+# === Ignore Python cache files ===
+__pycache__/
+*.py[cod]
+
+# === Ignore Mac system files ===
+.DS_Store
+
+# === Ignore YAML and environment files, except one tracked environment file ===
+*.yml
+!rubin_sim_223_environment.yml
+*.yaml
+!rubin_sim_223_environment.yaml
+
+# === Ignore environment/lock/log files ===
+*.env
+*.lock
+*.log
+
+# === VS Code settings ===
+.vscode/
+
+# === Output, results, plots, metrics ===
+**/output/
+**/outputs/
+**/plots/
+**/results/
+**/metrics/
+**/Metric_temp/
+
+# === Ignore LSST result databases ===
+resultsDb_sqlite.db
+
+
