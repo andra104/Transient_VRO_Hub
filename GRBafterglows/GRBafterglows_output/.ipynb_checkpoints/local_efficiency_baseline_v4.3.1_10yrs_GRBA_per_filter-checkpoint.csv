@@ -1,0 +1,17 @@
+dist_min_Mpc, dist_max_Mpc, metric, filter, found, total, efficiency 
+10, 1000, GRB_Detect, u, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, u, 104, 104, 1.0000
+10, 1000, GRB_Detect, g, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, g, 104, 104, 1.0000
+10, 1000, GRB_Detect, r, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, r, 104, 104, 1.0000
+10, 1000, GRB_Detect, i, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, i, 104, 104, 1.0000
+10, 1000, GRB_Detect, z, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, z, 104, 104, 1.0000
+10, 1000, GRB_Detect, y, 104, 426, 0.2441
+10, 1000, GRB_HistoricalMatch, y, 104, 104, 1.0000
+# Multi-band Metrics  
+10, 1000, GRB_Characterize, MultiBand, 74, 426, 0.1737
+10, 1000, GRB_SpecTriggerable, MultiBand, 2, 426, 0.0047
+10, 1000, GRB_ColorEvolve, MultiBand, 56, 426, 0.1315

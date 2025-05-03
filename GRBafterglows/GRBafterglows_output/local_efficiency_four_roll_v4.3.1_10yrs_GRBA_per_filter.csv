@@ -1,0 +1,11 @@
+dist_min_Mpc, dist_max_Mpc, metric, filter, found, total, efficiency 
+10, 1000, GRB_Detect, u, 0, 42031, 0.0000
+10, 1000, GRB_Detect, g, 0, 42031, 0.0000
+10, 1000, GRB_Detect, r, 0, 42031, 0.0000
+10, 1000, GRB_Detect, i, 0, 42031, 0.0000
+10, 1000, GRB_Detect, z, 0, 42031, 0.0000
+10, 1000, GRB_Detect, y, 0, 42031, 0.0000
+# Multi-band Metrics  
+10, 1000, GRB_Characterize, MultiBand, 0, 42031, 0.0000
+10, 1000, GRB_SpecTriggerable, MultiBand, 0, 42031, 0.0000
+10, 1000, GRB_ColorEvolve, MultiBand, 0, 42031, 0.0000

@@ -1,0 +1,7 @@
+dist_min_Mpc, dist_max_Mpc, metric, found, total, efficiency
+10, 300, ShockCooling_Detect, 55, 500, 0.1100
+10, 300, ShockCooling_Characterize, 23, 500, 0.0460
+10, 300, ShockCooling_Classical, 23, 500, 0.0460
+10, 300, ShockCooling_Ambiguous, 59, 500, 0.1180
+10, 300, ShockCooling_Uncharacterized, 418, 500, 0.8360
+10, 300, ShockCooling_DoublePeak, 26, 500, 0.0520
