@@ -533,6 +533,18 @@ def sample_grb_rate_from_volume(t_start, t_end, d_min, d_max, rate_density=1e-8)
 
     V = cosmo.comoving_volume(z_max).to(u.Mpc**3).value - cosmo.comoving_volume(z_min).to(u.Mpc**3).value
     return np.random.poisson(rate_density * V * years)
+
+# --------------------------------------------
+# Alternate
+# --------------------------------------------
+def inject_uniform_healpix(nside, n_events, seed=42):
+    npix = hp.nside2npix(nside)
+    rng = np.random.default_rng(seed)
+    pix = rng.choice(npix, size=n_events)
+    theta, phi = hp.pix2ang(nside, pix)
+    ra = np.degrees(phi)
+    dec = np.degrees(0.5 * np.pi - theta)
+    return ra, dec
     
 # --------------------------------------------
 # GRB population generator
@@ -565,7 +577,12 @@ def generateGRBPopSlicer(t_start=1, t_end=3652, seed=42,
     print(f"Simulated {n_events} GRB events using rate_density = {rate_density:.1e}")
 
     
-    ra, dec = uniform_sphere_degrees(n_events, seed=seed) #returns degrees
+    #ra, dec = uniform_sphere_degrees(n_events, seed=seed) #returns degrees
+    nside = 64  # Or 128 if you want higher resolution
+    ra, dec = inject_uniform_healpix(nside=nside, n_events=n_events, seed=seed)
+
+    #print(f"[CHECK] Dec range: {dec.min():.2f} to {dec.max():.2f} (expected ~[-90, 90])")
+
     dec = np.clip(dec, -89.9999, 89.9999)
     #dec_rad = np.radians(dec)
     
