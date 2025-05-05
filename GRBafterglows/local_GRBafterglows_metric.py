@@ -5,6 +5,11 @@ from rubin_sim.maf.slicers import UserPointsSlicer
 from rubin_scheduler.data import get_data_dir #local
 from rubin_sim.phot_utils import DustValues
 
+import sys
+import os
+sys.path.append(os.path.abspath(".."))
+from shared_utils import equatorialFromGalactic, uniform_sphere_degrees
+
 from rubin_sim.maf.utils import m52snr
 import matplotlib.pyplot as plt
 from astropy.cosmology import Planck18 as cosmo
@@ -22,55 +27,7 @@ import os
 import pickle 
 
 DEBUG = False
-# --------------------------------------------------
-# Utility: Convert Galactic to Equatorial coordinates
-# --------------------------------------------------
-def equatorialFromGalactic(lon, lat):
-    gal = Galactic(l=lon * u.deg, b=lat * u.deg)
-    equ = gal.transform_to(ICRSFrame())
-    return equ.ra.deg, equ.dec.deg
-
-# -----------------------------------------------------------------------------
-# Local Utility: Uniform sky injection
-# -----------------------------------------------------------------------------
-def uniform_sphere_degrees(n_points, seed=None):
-
-    """
-    Generate RA, Dec uniformly over the celestial sphere.
-
-    Parameters
-    ----------
-    n_points : int
-        Number of sky positions.
-    seed : int or None
-        Random seed.
-
-    Returns
-    -------
-    ra : ndarray
-        Right Ascension in degrees.
-    dec : ndarray
-        Declination in degrees.
-    """
-    rng = np.random.default_rng(seed)
-    ra = rng.uniform(0, 360, n_points)
-    z = rng.uniform(-1, 1, n_points)  # uniform in cos(theta)
-    dec = np.degrees(np.arcsin(z))   # arcsin(z) gives uniform in solid angle
-    
-    plt.figure(figsize=(8, 4))
-    plt.scatter(ra, dec, s=1, alpha=0.3, label="Injected", color="black")
-    plt.xlabel("RA [deg]")
-    plt.ylabel("Dec [deg]")
-    plt.title("GRB Sky UniformSphere Distribution")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-    
-    print("YAY! UNIFORM SPHERE!")
-    return ra, dec
-
-
+MAXGAP = 100
 # --------------------------------------------
 # Power-law GRB afterglow model based on Zeh et al. (2005)
 # --------------------------------------------
@@ -166,7 +123,8 @@ def generateGRBAfterglowTemplates(
         print(f"Found existing GRB afterglow templates at {save_to}. Not regenerating.")
         return
 
-    lc_model = GRBAfterglowLC(num_samples=num_samples, num_lightcurves=num_lightcurves, load_from=None)
+    lc_model = GRBAfterglowLC(num_samples=num_samples, num_lightcurves=num_lightcurves,
+                              load_from=None)
     with open(save_to, "wb") as f:
         pickle.dump({'lightcurves': lc_model.data}, f)
     print(f"Saved synthetic GRB light curve templates to {save_to}")
@@ -210,6 +168,8 @@ class BaseGRBAfterglowMetric(BaseMetric):
                          badval=badval, **kwargs)
 
 
+
+    
     def evaluate_grb(self, dataSlice, slice_point, return_full_obs=True):
         """
         Evaluate GRB light curve at the location and time of the slice point.
@@ -239,7 +199,30 @@ class BaseGRBAfterglowMetric(BaseMetric):
             return snr, filters, times, obs_record
         return snr, filters, times
 
+    def detect(self, filters, snr, times, obs_record):
+        detected = False        
+        # -------- Detection Logic --------
+        # Option A: 2 detections in same filter ≥30min apart
+        for f in np.unique(filters):
+            mask = filters == f
+            if np.sum(snr[mask] >= 5) >= 2:
+                if np.ptp(times[mask]) >= 0.5 / 24 and np.diff(times[mask]).min() <= MAXGAP:
+                    detected = True
+                    break
+        return detected
 
+    def betterdetect(self, filters, snr, times, obs_record):
+
+        mask = snr >= 5
+        t_detect = times[snr >= 5]
+        detected = False
+        if len(t_detect) > 0:
+            if len(np.unique(filters[mask])) >= 2 :
+                if np.ptp(t_detect) >= 0.5 / 24 and np.diff(t_detect).min() <= MAXGAP:
+                    detected = True
+        # Option B: ≥2 epochs, second has ≥2 filters; first can be a non-detection
+        return detected
+    
 
 # --------------------------------------------
 # Unified Detection metric
@@ -260,6 +243,8 @@ class GRBAfterglowDetectMetric(BaseGRBAfterglowMetric):
         super().__init__(**kwargs)
         self.metricName = kwargs.get('metricName', 'GRB_Detect')
         self.obs_records = {}  # <-- NEW: to store all detected event records individually
+        self.parent_instance = BaseGRBAfterglowMetric()
+
 
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
@@ -272,28 +257,10 @@ class GRBAfterglowDetectMetric(BaseGRBAfterglowMetric):
             for k in ['mjd_obs', 'mag_obs']:
                 obs_record[k] = obs_record[k][keep]
 
-        # -------- Detection Logic --------
         
-        detected = False
-    
-        # Option A: 2 detections in same filter ≥30min apart
-        for f in np.unique(filters):
-            mask = filters == f
-            if np.sum(snr[mask] >= 5) >= 2:
-                if np.ptp(times[mask]) >= 0.5 / 24:
-                    detected = True
-                    break
-    
-        # Option B: 2 filters ≥5σ ≥30min apart
-        if not detected:
-            if DEBUG:
-                print("FBB DEBUG: Option 2")
-            t_detect = times[snr >= 5]
-            if len(t_detect) > 0:
-                if len(np.unique(filters[snr >= 5])) >= 2:
-                    if np.ptp(t_detect) >= 0.5 / 24:
-                        detected = True
-
+                
+        detected = self.parent_instance.detect(filters, snr, times, obs_record)
+        
         # -------- Save Detection Metadata --------
     
         if detected:
@@ -343,6 +310,94 @@ class GRBAfterglowDetectMetric(BaseGRBAfterglowMetric):
             return 0.0
 
 
+class GRBAfterglowBetterDetectMetric(BaseGRBAfterglowMetric):
+    """ 
+
+    Option A: ≥2 detections in a single filter, ≥30 minutes apart
+    
+    Option B: ≥2 epochs, second has ≥2 filters; first can be a non-detection
+    
+    This is an “either/or” detection logic. 
+    
+    This event is detected if it passes either the intra-night multi-detection or the epoch-based detection criteria.
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.metricName = kwargs.get('metricName', 'GRB_BetterDetect')
+        self.obs_records = {}  # <-- NEW: to store all detected event records individually
+        self.parent_instance = BaseGRBAfterglowMetric()
+
+    def run(self, dataSlice, slice_point=None):
+        snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
+        
+        if self.filter_include is not None:
+            keep = np.isin(filters, self.filter_include)
+            snr = snr[keep]
+            filters = filters[keep]
+            times = times[keep]
+            for k in ['mjd_obs', 'mag_obs']:
+                obs_record[k] = obs_record[k][keep]
+
+        # -------- Detection Logic --------
+        
+        detected = False
+    
+        # Option A: 2 detections in same filter ≥30min apart
+
+        detected = self.parent_instance.detect(filters, snr, times, obs_record)
+        if not detected:
+            detected = self.parent_instance.betterdetect(filters, snr, times, obs_record)
+        
+        
+        # -------- Save Detection Metadata --------
+    
+        if detected:
+            detected_mask = snr >= 5
+            obs_record['detected'] = (snr >= 5)
+            self.latest_obs_record = obs_record
+
+            # Calculate rise and fade times
+            first_det_mjd = np.nan
+            last_det_mjd = np.nan
+            rise_time = np.nan
+            fade_time = np.nan
+        
+            if np.any(detected_mask):
+                first_det_mjd = obs_record['mjd_obs'][detected_mask].min()
+                last_det_mjd = obs_record['mjd_obs'][detected_mask].max()
+                rise_time = first_det_mjd - (self.mjd0 + slice_point['peak_time'])
+                fade_time = last_det_mjd - (self.mjd0 + slice_point['peak_time'])
+        
+            peak_index = np.argmin(obs_record['mag_obs'])
+            peak_mjd = obs_record['mjd_obs'][peak_index]
+            peak_mag = obs_record['mag_obs'][peak_index]
+        
+            # Update obs_record with full metadata
+            obs_record.update({
+                'first_det_mjd': first_det_mjd,
+                'last_det_mjd': last_det_mjd,
+                'rise_time_days': rise_time,
+                'fade_time_days': fade_time,
+                'sid': slice_point['sid'],
+                'file_indx': slice_point['file_indx'],
+                'ra': slice_point['ra'],
+                'dec': slice_point['dec'],
+                'distance_Mpc': slice_point['distance'],
+                'peak_mjd': peak_mjd,
+                'peak_mag': peak_mag,
+                'ebv': slice_point['ebv'],
+            })
+        
+            # Save this full event
+            self.obs_records[slice_point['sid']] = obs_record
+        
+            self.latest_obs_record = obs_record
+            return 1.0
+        else:
+            self.latest_obs_record = None
+            return 0.0
+
 
 # --------------------------------------------
 # Characterization metric — extended multi-band follow-up
@@ -370,15 +425,21 @@ class GRBAfterglowCharacterizeMetric(BaseGRBAfterglowMetric):
         super().__init__(**kwargs)
         self.metricName = kwargs.get('metricName', 'GRB_Characterize')
         self.obs_records = {}  # <-- NEW: to store all detected event records individually
+        self.parent_instance = BaseGRBAfterglowMetric()
+        
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
-        good = snr >= 3
-        if np.sum(good) < 4:
-            return 0.0
-        n_filters = len(np.unique(filters[good]))
-        duration = np.ptp(times[good])
-        if n_filters >= 3 and duration >= 3:
-            return 1.0
+        detected = self.parent_instance.detect(filters, snr, times, obs_record)
+        if not detected:
+            detected = self.parent_instance.betterdetect(filters, snr, times, obs_record)
+        if detected:
+            good = snr >= 3
+            if np.sum(good) < 4:
+                return 0.0
+            n_filters = len(np.unique(filters[good]))
+            duration = np.ptp(times[good])
+            if n_filters >= 3 and duration >= 3:
+                return 1.0
         return 0.0
 
 # --------------------------------------------
@@ -406,15 +467,19 @@ class GRBAfterglowSpecTriggerableMetric(BaseGRBAfterglowMetric):
         super().__init__(load_from="GRBAfterglow_templates.pkl", **kwargs)
         self.metricName = kwargs.get('metricName', 'GRB_Followup')
         self.obs_records = {}  # <-- NEW: to store all detected event records individually
+        self.parent_instance = BaseGRBAfterglowMetric()
 
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
+        detected = self.parent_instance.detect(filters, snr, times, obs_record)
+        if not detected:
+            detected = self.parent_instance.betterdetect(filters, snr, times, obs_record)
+        if detected:
+            within_half_day = times <= 0.5
+            early = (snr >= 5) & within_half_day
 
-        within_half_day = times <= 0.5
-        early = (snr >= 5) & within_half_day
-
-        if len(np.unique(filters[early])) >= 2:
-            return 1.0
+            if len(np.unique(filters[early])) >= 2:
+                return 1.0
         return 0.0
 
 # --------------------------------------------
@@ -451,7 +516,7 @@ class GRBAfterglowColorEvolveMetric(BaseGRBAfterglowMetric):
         detected = (snr >= 3)
         if np.sum(detected) < 4:
             return 0.0
-
+        
         # Group by rounded times to cluster into epochs
         t_epoch = np.round(times[detected] * 2) / 2  # bin to 0.5-day resolution
         f_epoch = filters[detected]
@@ -622,6 +687,22 @@ def generateGRBPopSlicer(t_start=1, t_end=3652, seed=42,
     peak_times = rng.uniform(t_start, t_end, n_events)
     file_indx = rng.integers(0, num_lightcurves, len(ra))
 
+
+    #print(t_start, t_end, n_events)
+    plt.hist(peak_times,  bins=50)
+    plt.xlabel("peak time")
+    plt.title("Peak Time")
+    plt.grid(True)
+    plt.show()
+
+    plt.hist(distances,  bins=50)
+    plt.xlabel("distance")
+    plt.title("Distance Distribution")
+    plt.grid(True)
+    plt.show()
+
+
+    
     #print(f"[DEBUG] dec sample before SkyCoord: {dec[:5]}")
     #print(f"[DEBUG] dec units? min={np.min(dec):.2f}, max={np.max(dec):.2f}")
     print(f"[DEBUG]Print 5 sample before SkyCoord - ra,dec: {slicer.slice_points}")
@@ -658,6 +739,9 @@ def generateGRBPopSlicer(t_start=1, t_end=3652, seed=42,
         file_indx = file_indx[mask]
         ebv_vals = ebv_vals[mask]
         coords = coords[mask]
+
+
+    
 
     #slicer = UserPointsSlicer(ra=ra, dec=dec, badval=0)
     #slicer.slice_points['ra'] = ra
