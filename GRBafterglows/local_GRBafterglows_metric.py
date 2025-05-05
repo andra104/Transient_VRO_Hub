@@ -27,7 +27,7 @@ import os
 import pickle 
 
 DEBUG = False
-MAXGAP = 100
+MAXGAP = 1
 # --------------------------------------------
 # Power-law GRB afterglow model based on Zeh et al. (2005)
 # --------------------------------------------
@@ -206,7 +206,7 @@ class BaseGRBAfterglowMetric(BaseMetric):
         for f in np.unique(filters):
             mask = filters == f
             if np.sum(snr[mask] >= 5) >= 2:
-                if np.ptp(times[mask]) >= 0.5 / 24 and np.diff(times[mask]).min() <= MAXGAP:
+                if np.ptp(times[mask]) >= 0.5 / 24 and np.diff(np.sort(times[mask])).min() <= MAXGAP:
                     detected = True
                     break
         return detected
@@ -218,7 +218,7 @@ class BaseGRBAfterglowMetric(BaseMetric):
         detected = False
         if len(t_detect) > 0:
             if len(np.unique(filters[mask])) >= 2 :
-                if np.ptp(t_detect) >= 0.5 / 24 and np.diff(t_detect).min() <= MAXGAP:
+                if np.ptp(t_detect) >= 0.5 / 24 and np.diff(np.sort(times[mask])).min() <= MAXGAP:
                     detected = True
         # Option B: ≥2 epochs, second has ≥2 filters; first can be a non-detection
         return detected
