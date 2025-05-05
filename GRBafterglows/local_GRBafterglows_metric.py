@@ -21,6 +21,7 @@ import os
 
 import pickle 
 
+DEBUG = False
 # --------------------------------------------------
 # Utility: Convert Galactic to Equatorial coordinates
 # --------------------------------------------------
@@ -285,6 +286,8 @@ class GRBAfterglowDetectMetric(BaseGRBAfterglowMetric):
     
         # Option B: 2 filters ≥5σ ≥30min apart
         if not detected:
+            if DEBUG:
+                print("FBB DEBUG: Option 2")
             t_detect = times[snr >= 5]
             if len(t_detect) > 0:
                 if len(np.unique(filters[snr >= 5])) >= 2:
@@ -363,6 +366,10 @@ class GRBAfterglowCharacterizeMetric(BaseGRBAfterglowMetric):
     multi-band and temporal information to allow basic modeling and comparison to 
     theoretical GRB afterglow light curves.
     """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.metricName = kwargs.get('metricName', 'GRB_Characterize')
+        self.obs_records = {}  # <-- NEW: to store all detected event records individually
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
         good = snr >= 3
@@ -397,6 +404,8 @@ class GRBAfterglowSpecTriggerableMetric(BaseGRBAfterglowMetric):
     """
     def __init__(self, **kwargs):
         super().__init__(load_from="GRBAfterglow_templates.pkl", **kwargs)
+        self.metricName = kwargs.get('metricName', 'GRB_Followup')
+        self.obs_records = {}  # <-- NEW: to store all detected event records individually
 
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
@@ -433,6 +442,8 @@ class GRBAfterglowColorEvolveMetric(BaseGRBAfterglowMetric):
     """
     def __init__(self, **kwargs):
         super().__init__(load_from="GRBAfterglow_templates.pkl", **kwargs)
+        self.metricName = kwargs.get('metricName', 'GRB_ColorEvolution')
+        self.obs_records = {}  # <-- NEW: to store all detected event records individually
 
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
@@ -486,6 +497,8 @@ class GRBAfterglowHistoricalMatchMetric(BaseGRBAfterglowMetric):
         """
         self.coaddDepth = coaddDepth
         super().__init__(load_from="GRBAfterglow_templates.pkl", **kwargs)
+        self.metricName = kwargs.get('metricName', 'GRB_HistoricalMetric')
+        self.obs_records = {}  # <-- NEW: to store all detected event records individually
 
     def run(self, dataSlice, slice_point=None):
         snr, filters, times, obs_record = self.evaluate_grb(dataSlice, slice_point, return_full_obs=True)
