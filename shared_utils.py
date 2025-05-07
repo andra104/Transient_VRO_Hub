@@ -1,6 +1,19 @@
 from astropy.coordinates import Galactic, ICRS as ICRSFrame
 import numpy as np
+import healpy as hp
 import matplotlib.pyplot as plt
+# --------------------------------------------
+# Alternate
+# --------------------------------------------
+def inject_uniform_healpix(nside, n_events, seed=42):
+    npix = hp.nside2npix(nside)
+    rng = np.random.default_rng(seed)
+    pix = rng.choice(npix, size=n_events)
+    theta, phi = hp.pix2ang(nside, pix)
+    ra = np.degrees(phi)
+    dec = np.degrees(0.5 * np.pi - theta)
+    return ra, dec
+
 
 # --------------------------------------------------
 # Utility: Convert Galactic to Equatorial coordinates
