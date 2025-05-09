@@ -8,7 +8,7 @@ from rubin_sim.phot_utils import DustValues
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
-from shared_utils import equatorialFromGalactic, uniform_sphere_degrees
+from shared_utils import equatorialFromGalactic, uniform_sphere_degrees, inject_uniform_healpix
 
 from rubin_sim.maf.utils import m52snr
 import matplotlib.pyplot as plt
@@ -612,23 +612,14 @@ def sample_grb_rate_from_volume(t_start, t_end, d_min, d_max, rate_density=1e-8)
     V = cosmo.comoving_volume(z_max).to(u.Mpc**3).value - cosmo.comoving_volume(z_min).to(u.Mpc**3).value
     return np.random.poisson(rate_density * V * years)
 
-# --------------------------------------------
-# Alternate
-# --------------------------------------------
-def inject_uniform_healpix(nside, n_events, seed=42):
-    npix = hp.nside2npix(nside)
-    rng = np.random.default_rng(seed)
-    pix = rng.choice(npix, size=n_events)
-    theta, phi = hp.pix2ang(nside, pix)
-    ra = np.degrees(phi)
-    dec = np.degrees(0.5 * np.pi - theta)
-    return ra, dec
+
     
 # --------------------------------------------
 # GRB population generator
 # --------------------------------------------
 def generateGRBPopSlicer(t_start=1, t_end=3652, seed=42,
-                         d_min=10, d_max=1000, num_lightcurves=1000, gal_lat_cut=None, rate_density=1e-8,
+                         d_min=10, d_max=1000, num_lightcurves=1000,
+                         gal_lat_cut=None, rate_density=1e-8,
                          load_from=None, save_to=None):
     """
     Generate a population of GRB afterglows with realistic extinction and sky distribution.
