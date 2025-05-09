@@ -1,0 +1,35 @@
+Based on the logic of the template and local_GRBafterglows_metric that I have attached, I now want to write a metric for Luminous Fast Blue Optical Transients (LFBOTs) with the following light curve details, rate of occurrence, Detection Criteria, and other details. 
+
+Light curve details: 
+
+    "LFBOT": {
+        "riseRates": {'u': "-", 'g': (0.25, 2.5), 'r': (0.25, 2.5), 
+                      'i': "-", 'z': "-", 'y': "-"},
+        "fadeRates": {'u': "-", 'g': (0.15, 0.45), 'r': (0.15, 0.45), 
+                      'i': "-", 'z': "-", 'y': "-"},
+        "peakMagRange": {'u': "-", 'g': (-21.5, -20), 'r': (-21.5, -20), 
+                         'i': "-", 'z': "-", 'y': "-"},
+        "durationAtPeak": {'u': "-", 'g': "< 4", 'r': "< 4", 
+                           'i': "-", 'z': "-", 'y': "-"},
+        "timeAboveHalfMax":{'u': "-", 'g': "12", 'r': "12", 
+                           'i': "-", 'z': "-", 'y': "-"},}
+
+Rate of occurence: 0.3 − 420 × 10^−9 /Mpc^3/yr
+
+
+Detection Criteria: 
+We require detections in at least two epochs, with at least one epoch having detections in ≥ 2 filters to determine a color AND a reliable estimate of the host galaxy redshift. So this would be flagged as a rapidly rising and very blue, and very luminous transient.
+ If the transient is not identified on the rise, then we require at least three epochs to get a sense for the duration above half-maximum light. We could then flag the transient on the basis of a duration under 9 days AND a high implied luminosity from the host-galaxy redshift.
+ Detections must be separated by at least 30 minutes to remove moving objects. Detections have a maximum separation of ??? days to enable confirmation of sufficiently fast evolution.
+
+Other Details: 
+
+One example is AT2018cow (Prentice et al 2018, https://ui.adsabs.harvard.edu/abs/2018ApJ...865L...3P/abstract, Figure 2).  Initially was discovered at a peak of ATLAS c = 13.6 mag and declined at a rate of 0.2 mag/day over 2 weeks, with consistent blue colors (g – r ~ -0.5 mag).  This was exceptionally bright and nearby, so we expect most LFBOTs to appear dimmer.  Another example is AT2023fhn (Chrimes et al. 2024, https://ui.adsabs.harvard.edu/abs/2024MNRAS.527L..47C/abstract, Section 2.1 & Table 2).  Was discovered at r = 19.7 mag and briefly brightened by 0.5 magnitudes by a day later, then declined at a rate of 0.2 mag/day over ten days.	
+
+You listed the requirements for detection, which is great - if there were more observations of the LFBOT than that, could we better characterize it? (we can have different criteria for “detection” and “characterization”, if so)	
+
+At least with ZTF, we typically use optical surveys just for detection of possible LFBOT candidates.  Further characterization of a candidate, and determing whether it is an actual LFBOT, is typically done through follow-up observations, such as radio and X-ray follow-up and optical spectroscopy to determine the redshift.  Continued long-term observations would be very useful in showing the fading tail of an LFBOT’s light curve, but as of now, that would be just be a helpful bonus.
+
+Right now the text states, "Detections must be separated by at least 30 minutes to remove moving objects. Detections have a maximum separation of ? days to enable confirmation of sufficiently fast evolution.” Let me know if you have a separation you want to use for that; otherwise we’ll just set the maximum at whenever it becomes dim enough to no longer be visible.
+
+I changed this to 6 days to accurately observe a timescale above half-maximum of less than twelve days, as well as accounting for the fact that a typical 0.2 mag/day fade results in a two magnitude drop after 6 days.  This is mostly an informal benchmark based on examining current LFBOT light curves and estimating the minimum data we need to detect them as a candidate.
